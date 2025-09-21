@@ -1,0 +1,38 @@
+﻿services:
+  sge.postgres:
+    image: postgres:latest                # Utilise la dernière version de l'image officielle PostgreSQL 
+    container_name: sge_postgres
+    environment:                       # Variables d'environnement pour créer la DB + user
+      POSTGRES_DB: sgedb
+      POSTGRES_USER: sgeuser
+      POSTGRES_PASSWORD: sgepassword
+    ports:
+      - "5432:5432"                    # exposer le port pour accès depuis l'hôte (optionnel en dev)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data   # persistance des données
+    networks:
+      - sge_network
+  
+  sge.api:
+    image: sge.api
+    build:
+      context: .                       # contexte de build (racine solution)
+      dockerfile: SGE.API/Dockerfile   # chemin vers le Dockerfile du projet API
+    container_name: sge_api
+    ports:
+      - "5000:80"                      # mappe le port 80 du conteneur sur 5000 de l'hôte
+    depends_on:
+      - postgres                       # démarre postgres avant l'api (ordre, pas garantie de readiness)
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=sgedb;Username=sgeuser;Password=sgepassword
+    networks:
+      - sge_network
+
+volumes:
+  postgres_data:
+
+networks:
+  sge_network:
+    driver: bridge
+
