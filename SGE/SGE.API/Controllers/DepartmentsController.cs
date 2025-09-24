@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SGE.Application.DTOs;
+using SGE.Application.DTOs.Departments;
 using SGE.Application.Interfaces.Services;
 
 namespace SGE.API.Controllers;

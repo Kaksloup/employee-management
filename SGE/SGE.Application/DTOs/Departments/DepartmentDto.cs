@@ -1,4 +1,4 @@
-namespace SGE.Application.DTOs;
+namespace SGE.Application.DTOs.Departments;
 
 public class DepartmentDto
 {
