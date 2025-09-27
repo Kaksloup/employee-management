@@ -5,6 +5,7 @@ using SGE.Application.Interfaces.Repositories;
 using SGE.Application.Interfaces.Services;
 using SGE.Core.Entities;
 using SGE.Core.Enums;
+using SGE.Core.Exceptions;
 
 namespace SGE.Application.Services;
 
@@ -38,20 +39,20 @@ public class LeaveRequestService(
     {
         var employee = await employeeRepository.GetByIdAsync(dto.EmployeeId, cancellationToken);
         if (employee is null)
-            throw new KeyNotFoundException($"Employee with ID {dto.EmployeeId} not found");
+            throw new EmployeeNotFoundException(dto.EmployeeId);
 
         if (dto.EndDate < dto.StartDate)
-            throw new InvalidOperationException("End date cannot be before start date");
+            throw new ValidationException("EndDate", "La date de fin doit être supérieure à la date de début.");
 
         if (dto.StartDate < DateTime.Today)
-            throw new InvalidOperationException("Cannot request leave for past dates");
+            throw new ValidationException("StartDate", "La date de début doit être supérieure ou égale à la date de jour.");
         
         var daysRequested = CalculateBusinessDays(dto.StartDate, dto.EndDate);
         
-        if (await HasConflictingLeaveAsync(dto.EmployeeId, dto.StartDate, dto.EndDate))
-            throw new InvalidOperationException("Leave request conflicts with existing approved leave");
-
-
+        var hasConflict = await HasConflictingLeaveAsync(dto.EmployeeId, dto.StartDate, dto.EndDate, cancellationToken: cancellationToken);
+        if (hasConflict)
+            throw new ConflictingLeaveRequestException(dto.StartDate, dto.EndDate);
+        
         var entity = mapper.Map<LeaveRequest>(dto);
         entity.DaysRequested = daysRequested;
 
@@ -161,7 +162,8 @@ public class LeaveRequestService(
         CancellationToken cancellationToken = default)
     {
         var entity = await leaveRequestRepository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return false;
+        if (entity == null) 
+            throw new LeaveRequestNotFoundException(id);
 
         entity.Status = dto.Status;
         entity.ManagerComments = dto.ManagerComments;

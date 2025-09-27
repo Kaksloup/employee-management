@@ -3,6 +3,7 @@ using SGE.Application.DTOs.Employees;
 using SGE.Application.Interfaces.Repositories;
 using SGE.Application.Interfaces.Services;
 using SGE.Core.Entities;
+using SGE.Core.Exceptions;
 
 namespace SGE.Application.Services;
 
@@ -71,7 +72,7 @@ public class EmployeeService(IEmployeeRepository employeeRepository,
     {
         var department = await departmentRepository.GetByIdAsync(dto.DepartmentId, cancellationToken);
         if (department == null)
-            throw new ApplicationException("Il n'existe aucun departement avec cet identifiant");
+            throw new DepartmentNotFoundException(dto.DepartmentId);
         
         var existingEmployee = await employeeRepository.GetByEmailAsync(dto.Email, cancellationToken);
         if (existingEmployee != null)
@@ -92,7 +93,8 @@ public class EmployeeService(IEmployeeRepository employeeRepository,
     public async Task<bool> UpdateAsync(int id, EmployeeUpdateDto dto, CancellationToken cancellationToken = default)
     {
         var entity = await employeeRepository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return false;
+        if (entity == null) 
+            throw new EmployeeNotFoundException(id);
 
         mapper.Map(dto, entity);
         await employeeRepository.UpdateAsync(entity, cancellationToken);
@@ -108,7 +110,8 @@ public class EmployeeService(IEmployeeRepository employeeRepository,
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         var entity = await employeeRepository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return false;
+        if (entity == null) 
+            throw new EmployeeNotFoundException(id);
 
         await employeeRepository.DeleteAsync(id, cancellationToken);
         return true;
