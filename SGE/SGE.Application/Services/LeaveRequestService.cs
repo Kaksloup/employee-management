@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using SGE.Application.DTOs.LeaveRequests;
 using SGE.Application.Interfaces.Repositories;
 using SGE.Application.Interfaces.Services;
@@ -75,7 +76,7 @@ public class LeaveRequestService(
     /// </exception>
     public async Task<LeaveRequestDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        var leave = await leaveRequestRepository.GetByIdAsync(id, cancellationToken);
+        var leave = await leaveRequestRepository.GetByIdAsync(id, q => q.Include( x => x.Employee), cancellationToken);
         return leave == null ? null : mapper.Map<LeaveRequestDto>(leave);
     }
 

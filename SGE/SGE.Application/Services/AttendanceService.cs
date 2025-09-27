@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using SGE.Application.DTOs.Attendances;
 using SGE.Application.Interfaces.Repositories;
 using SGE.Application.Interfaces.Services;
@@ -37,10 +38,10 @@ public class AttendanceService(
         var time = clockInDto.DateTime.TimeOfDay;
         
         // Vérifier s'il existe déjà une entrée pour la date
-        var existingAttendances = await attendanceRepository.FindAsync( a => a.EmployeeId == clockInDto.EmployeeId 
-                                                                            && a.Date == date, cancellationToken);
+        var existingAttendance = await attendanceRepository
+            .FirstOrDefaultAsync( a => a.EmployeeId == clockInDto.EmployeeId 
+                                   && a.Date == date, cancellationToken);
 
-        var existingAttendance = existingAttendances.FirstOrDefault();
         if (existingAttendance?.ClockIn != null)
             throw new InvalidOperationException("Employee has already clocked in today");
 
@@ -95,10 +96,9 @@ public class AttendanceService(
         var time = clockOutDto.DateTime.TimeOfDay;
         
         // Vérifier s'il existe déjà une entrée pour la date
-        var existingAttendances = await attendanceRepository.FindAsync( a => a.EmployeeId == clockOutDto.EmployeeId 
-                                                                             && a.Date == date, cancellationToken);
+        var attendance = await attendanceRepository.FirstOrDefaultAsync( a => a.EmployeeId == clockOutDto.EmployeeId 
+                                                                              && a.Date == date, cancellationToken);
 
-        var attendance = existingAttendances.FirstOrDefault();
         if (attendance == null)
             throw new InvalidOperationException("No clock-in record found for today");
 
@@ -136,10 +136,9 @@ public class AttendanceService(
         if (!await employeeRepository.ExistsAsync(createAttendanceDto.EmployeeId, cancellationToken))
             throw new KeyNotFoundException($"Employee with ID {createAttendanceDto.EmployeeId} not found");
         
-        var existingAttendances = await attendanceRepository.FindAsync( a => a.EmployeeId == createAttendanceDto.EmployeeId 
+        var existingAttendance = await attendanceRepository.FirstOrDefaultAsync( a => a.EmployeeId == createAttendanceDto.EmployeeId 
                                                                              && a.Date == createAttendanceDto.Date.Date, cancellationToken);
-
-        var existingAttendance = existingAttendances.FirstOrDefault();
+        
         if (existingAttendance != null)
             throw new InvalidOperationException($"Attendance record already exists for {createAttendanceDto.Date:yyyy-MM-dd}");
 
@@ -163,7 +162,11 @@ public class AttendanceService(
     /// <returns>An object containing the attendance details, or null if no record is found with the specified ID.</returns>
     public async Task<AttendanceDto?> GetAttendanceByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        var att = await attendanceRepository.GetByIdAsync(id, cancellationToken);
+        var att = await attendanceRepository.GetByIdAsync(
+            id,
+            include: q => q.Include(x => x.Employee),
+            cancellationToken);
+        
         return att == null ? null : mapper.Map<AttendanceDto>(att);
     }
 
@@ -211,8 +214,8 @@ public class AttendanceService(
         CancellationToken cancellationToken = default)
     {
         var today = DateTime.Today;
-        var attendances = await attendanceRepository.FindAsync(a => a.Date.Date == today.Date , cancellationToken);
-        return mapper.Map<AttendanceDto>(attendances.First());
+        var attendance = await attendanceRepository.FirstOrDefaultAsync(a => a.Date.Date == today.Date , cancellationToken);
+        return mapper.Map<AttendanceDto>(attendance);
     }
 
     /// <summary>
@@ -230,7 +233,7 @@ public class AttendanceService(
     public async Task<decimal> GetMonthlyWorkedHoursAsync(int employeeId, int year, int month,
         CancellationToken cancellationToken = default)
     {
-        var startDate = new DateTime(year, month, 1);
+        var startDate = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);;
         var endDate = startDate.AddMonths(1).AddDays(-1);
 
         var attendances = await attendanceRepository.FindAsync(a => a.EmployeeId == employeeId && a.Date >= startDate && a.Date <= endDate, cancellationToken);

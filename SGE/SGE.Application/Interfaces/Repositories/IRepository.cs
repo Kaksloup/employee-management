@@ -21,6 +21,20 @@ public interface IRepository<T> where T : class
     Task<T?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Retrieves an entity of type <typeparamref name="T"/> by its unique identifier, with the option to include related data.
+    /// </summary>
+    /// <param name="id">The unique identifier of the entity to retrieve.</param>
+    /// <param name="include">A function to specify related data to include in the query, or null if no additional data should be included.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>
+    /// A task representing the asynchronous operation, with the result being the entity of type <typeparamref name="T"/> if it exists,
+    /// or null if no entity with the specified identifier is found.
+    /// </returns>
+    Task<T?> GetByIdAsync(int id, Func<IQueryable<T>, IQueryable<T>>? include = null,
+        CancellationToken cancellationToken = default);
+
+
+    /// <summary>
     /// Retrieves all entities of type <typeparamref name="T"/> from the repository.
     /// </summary>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
@@ -80,4 +94,16 @@ public interface IRepository<T> where T : class
     /// A task representing the asynchronous operation. The result indicates whether the entity was successfully deleted.
     /// </returns>
     Task DeleteAsync(int id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Asynchronously retrieves the first entity of type <typeparamref name="T"/> from the repository
+    /// that matches the specified predicate, or the default value if no matching entity is found.
+    /// </summary>
+    /// <param name="predicate">A function to test each entity for a condition.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>
+    /// A task representing the asynchronous operation, with the result being the first entity of type <typeparamref name="T"/>
+    /// that matches the specified predicate, or null if no such entity exists.
+    /// </returns>
+    Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
 }

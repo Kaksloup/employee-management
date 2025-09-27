@@ -46,6 +46,18 @@ public class Repository<T> : IRepository<T> where T : class
     {
         return await _dbSet.FindAsync([id], cancellationToken);
     }
+    
+    /// <inheritdoc/>  
+    public async Task<T?> GetByIdAsync(int id, Func<IQueryable<T>, IQueryable<T>>? include = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<T> query = _context.Set<T>();
+
+        if (include != null)
+            query = include(query);
+
+        return await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id, cancellationToken);
+    }
+
 
     /// <inheritdoc/>   
     public async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -90,4 +102,11 @@ public class Repository<T> : IRepository<T> where T : class
             await _context.SaveChangesAsync(cancellationToken);
         }
     }
+    
+    /// <inheritdoc/>
+    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return await _context.Set<T>().AsNoTracking().FirstOrDefaultAsync(predicate, cancellationToken);
+    }
+
 }
