@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SGE.Core.Entities;
@@ -96,5 +97,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(rt => rt.Token).IsUnique();
             entity.HasIndex(rt => new { rt.UserId, rt.CreatedAt });
         });
+        
+        builder.Entity<IdentityRole>().HasData(
+            new IdentityRole { Id = "1", Name = "Admin", NormalizedName = "ADMIN" },
+            new IdentityRole { Id = "2", Name = "Manager", NormalizedName = "MANAGER" },
+            new IdentityRole { Id = "3", Name = "User", NormalizedName = "USER" }
+        );
+
     }
 }

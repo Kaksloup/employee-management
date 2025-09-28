@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SGE.Application.DTOs.Employees;
 using SGE.Application.Interfaces.Services;
@@ -7,6 +8,7 @@ namespace SGE.API.Controllers;
 /// <summary>
 /// API controller responsible for managing employee-related operations.
 /// </summary>
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class EmployeesController (IEmployeeService employeeService) : ControllerBase
